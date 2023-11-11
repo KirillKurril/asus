@@ -16,6 +16,8 @@ endm
 print_string_as_chars macro str 
 	xor dx,dx
 	get_size str
+	cmp dl, 0h
+	je adios
 	mov cx, dx
 	mov bx, offset str
 	mov si, bx
@@ -26,7 +28,9 @@ print_loop:
     	mov ah, 02h
     	int 21h
     	inc si
-    	loop print_loop          
+    	loop print_loop  
+adios:
+        
 endm
 
 
@@ -67,8 +71,12 @@ endm
 
 find_substr macro bstr, fstr			;returns the first index of the substring occurrence in al or ff if the substring is not found
     	get_size str1
+	cmp dl, 0h
+	je meow
 	mov al, dl
 	get_size str2
+	cmp dl, 0h
+	je meow
 	mov bl, dl
 	mov cl, al
 	xor ch, ch
@@ -103,6 +111,9 @@ not_equal:
 return:
 	inc di
 	loop find_loop 
+	jmp meow
+
+meow:
 	mov ax, -1
 	
 exit:    
