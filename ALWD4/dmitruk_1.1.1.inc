@@ -31,6 +31,8 @@ endm
 print_string_as_chars macro str 
 	xor dx,dx
 	get_size str
+	cmp dx, 0h
+	je print_empty
 	mov cx, dx
 	mov bx, offset str
 	mov si, bx
@@ -41,7 +43,13 @@ print_loop:
     	mov ah, 02h
     	int 21h
     	inc si
-    	loop print_loop          
+    	loop print_loop
+	je print_as_char_exit
+
+print_empty:
+print_new_line 
+
+print_as_char_exit:        
 endm
 
 
@@ -356,7 +364,7 @@ space_check macro str
 
 check_loop:
 	get_char_by_index str, bx
-	cmp dl, 20
+	cmp dl, 20h
 	je space_imposter_detected
 	loop check_loop
 	jmp space_check_exit

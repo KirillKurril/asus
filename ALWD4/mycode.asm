@@ -23,10 +23,10 @@ include dmitruk1.1.inc
         je exp                         
                    
         remove_word str1, str2
-                                  
+               
+exp:                   
         print_new_line   
-        
-        print_string_as_chars str1  
-exp:
+               
+        print_string_as_chars str1
 
 end start
