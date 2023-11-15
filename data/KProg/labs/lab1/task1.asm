@@ -1,0 +1,9 @@
+	org 	$8000
+	ldaa	#$55
+	ldx	#$8200
+	staa	0,X
+	staa	1,X
+	staa	2,X
+	staa	3,X
+	staa	4,X
+	staa	5,X
