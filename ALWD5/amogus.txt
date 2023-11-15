@@ -1,0 +1,122 @@
+
+
+MOV CX, 0      ; Счетчик повторений
+MOV DX, 0      ; Максимальное количество повторений
+MOV BX, 0      ; Наиболее часто встречающееся число
+MOV SI, OFFSET array ; Адрес начала массива
+
+MOV AX, [SI]   ; Загрузка первого элемента массива в регистр AX
+MOV BX, AX     ; Инициализация BX значением первого элемента
+INC CX         ; Увеличение счетчика повторений
+
+INC SI         ; Увеличение указателя на следующий элемент массива
+MOV DI, LENGTHOF array - 1 ; Количество элементов в массиве
+
+LOOP_START:
+    MOV AX, [SI] ; Загрузка текущего элемента массива в регистр AX
+    CMP AX, BX   ; Сравнение текущего элемента с наиболее часто встречающимся числом
+
+    JNE CHECK_NEXT ; Если элемент не равен наиболее часто встречающемуся числу, перейти к следующему шагу
+
+    INC CX       ; Увеличение счетчика повторений
+
+CHECK_NEXT:
+    DEC DI       ; Уменьшение счетчика элементов массива
+    JNZ LOOP_START ; Если не все элементы обработаны, перейти к следующей итерации цикла
+
+    CMP CX, DX   ; Сравнение текущего количества повторений с максимальным
+    JLE END      ; Если текущее количество повторений меньше или равно максимальному, закончить
+
+    MOV DX, CX   ; Обновление максимального количества повторений
+    MOV BX, AX   ; Обновление наиболее часто встречающегося числа
+
+END:
+    ; В переменной BX содержится наиболее часто встречающееся число
+    ; В переменной DX содержится количество его повторений
+
+
+
+
+DATA SEGMENT
+ARR DB 1,4,2,3,9,8,6,7,5,10
+LEN DW $-ARR
+LARGE DB ?
+DATA ENDS
+CODE SEGMENT
+ASSUME DS:DATA CS:CODE
+START:
+MOV AX,DATA
+MOV DS,AX
+LEA SI,ARR
+MOV AL,ARR[SI]
+MOV LARGE,AL
+MOV CX,LEN
+REPEAT:
+MOV AL,ARR[SI]
+CMP LARGE,AL
+JG NOCHANGE
+MOV LARGE,AL
+NOCHANGE:
+INC SI
+LOOP REPEAT
+MOV AH,4CH
+INT 21H
+CODE ENDS
+END START
+
+
+.model small
+.stack 100h
+.data
+msg1    db  'Array: $'
+array   db  1,1,5,3,6,3,7,3
+i       dw  0
+.code
+main:
+    mov ax,@data
+    mov ds,ax
+    xor ax,ax
+    mov dh,0
+    mov si,0        ; Устанавливаю индексы
+    mov di,si       
+    mov cl,0        ; Старый счётчик
+    mov bl,0        ; Счётчик, сколько раз число встречается в массиве
+    mov cx,7        
+First:
+    mov i,cx
+    mov cx,7  
+    mov al,array[si]    ; Элемент массива с индексом si заносится в al
+    inc bl      ; Счётчик устанавливается в единицу
+Second: 
+    cmp al,array[di+1]  ; Если элемент массива с индексом di+1 равен числу al, то увеличиваем счётчик bl
+    je A
+    inc di
+Third:
+    loop Second     ; Внутренний цикл
+    xor di,di       
+    cmp bl,cl       ; Если счетчик bl больше cl, то перемещаем bl в cl и al в ah
+    jg B
+Fourth:    
+    inc si      ; Увеличиваем индекс si на единицу
+    mov di,si
+    xor bl,bl       ; Обнуляем счётчик bl
+    mov cx,i        
+    loop First      ; Внешний цикл
+    jmp Output
+A:  
+    inc bl
+    jmp Third        
+B:
+    mov cl,bl
+    mov ah,al
+    jmp Fourth
+Output:
+    mov dl,ah
+    add al,30h
+    mov ah,02h
+    int 21h
+    jmp Exit
+Exit:
+    mov ax,4c00h
+    int 21h
+end main

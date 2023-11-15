@@ -2,7 +2,7 @@
 ; print_string (str_name) 
 ; print_string_as_chars (str_name)
 ; get_string (str_name)
-; get_char_by_index (str_name, index_as_wb)
+; get_char_by_index (str_name, index_as_wb) it's prohibited to use bx as index
 ; print_new_line ()
 ; find_substr (base_str, sought_str)
 ; remove_word (base_str, removable_str) removable string must be a separate word in the base string 
@@ -10,15 +10,20 @@
 ; push_registers () don't push "ip" and "cs"
 ; pop_registers () don't pop "ip" and "cs"
 ; space_check () returns -1 in al if string contains spaces
+; set_size (str_name) set string size from dl value
+; is_empty (str_name) set ZF if string is empty
+; to_uint (str_name) if error, returns ffff in ax and cf = 1, si must be 0h or if is called from to_int 0h or 01h
 
 
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 data_init macro
        	mov ax, data
        	mov ds, ax
 endm
 
-
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 print_string macro str
 	mov ah, 09h
@@ -26,7 +31,7 @@ print_string macro str
 	int 21h
 endm
 
-
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 print_string_as_chars macro str 
 	xor dx,dx
@@ -52,7 +57,7 @@ print_new_line
 print_as_char_exit:        
 endm
 
-
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 get_string macro str
 	lea dx, str
@@ -60,23 +65,27 @@ get_string macro str
        	int 21h
 endm
 
-
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 get_size macro str				;returns size in dl
+	push si 
 	mov si, offset str
         add si, 1
        	mov dl, [si]
+	pop si 
 endm
 
-
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 get_char_by_index macro str, index		;returns a character in dl
-	mov si, offset str + 2
-        add si, index
-       	mov dl, [si]
+	push bx
+	mov bx, offset str + 2
+        add bx, index
+       	mov dl, [bx]
+	pop bx
 endm	
 
-
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 print_new_line macro 
 	mov ah, 02h
@@ -86,7 +95,7 @@ print_new_line macro
 	int 21h
 endm
 
-
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 find_substr macro bstr, fstr			;returns the first index of the substring occurrence in al or ff if the substring is not found
     	get_size str1
@@ -129,9 +138,10 @@ return:
 	mov ax, -1
 	
 exit:    
+
 endm
 
-
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
 remove_word macro str1, str2
       find_substr str1, str2
@@ -268,6 +278,8 @@ remove_word_exit:
 
 endm 
 
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 remove_substr macro str1, str2
 	    find_substr str1, str2
 	    cmp al, 0ffh   
@@ -324,6 +336,7 @@ remove_substr_exit:
 
 endm 
   
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 push_registers macro
 	push ax
@@ -340,6 +353,8 @@ push_registers macro
 
 endm
 
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 pop_registers macro
 	pop es  
 	pop ds
@@ -355,7 +370,32 @@ pop_registers macro
 
 endm
 
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+lite_push macro
+	push bx
+	push cx
+ 	push dx
+	push si
+	push di
+
+endm
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+lite_pop macro
+	pop bx
+	pop cx
+ 	pop dx
+	pop si
+	pop di
+
+endm
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 space_check macro str
+	
 	get_size str
 	xor cx, cx
 	mov cl, dl
@@ -376,3 +416,128 @@ space_imposter_detected:
 space_check_exit:
 
 endm
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+set_size macro str
+	push si
+	mov si, offset str
+        add si, 1
+       	mov [si], dl
+	pop si
+
+endm
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+is_empty macro str	
+	get_size str
+	cmp dl, 0h
+
+endm
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+to_uint macro str 
+	lite_push 
+	xor ax, ax
+	xor bx, bx  
+	xor dx, dx
+ 
+	get_size str
+	mov cx, dx
+	cmp si, 1
+	ja to_uint_error
+	mov di,10  
+
+to_uint_loop:
+	get_char_by_index str, si 
+	mov bl, dl
+	cmp bl,'0'
+	jb to_uint_error
+	cmp bl,'9'
+	ja to_uint_error
+	sub bl, '0'
+	mul di
+	jc to_uint_error
+	add ax, bx 
+	jc to_uint_error
+	inc si
+	loop to_uint_loop
+	jmp to_uint_exit
+
+to_uint_error:
+	stc
+	mov ax, -1
+
+to_uint_exit:
+	lite_pop
+
+endm
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+to_int macro
+	lite_push 
+	mov si, 0
+
+	is_empty str
+	je to_int_error
+	get_char_by_index str, 0
+	cmp dl, '-'
+	jne pre_signed
+	inc si
+	get_size str
+	dec dl
+	set_size str
+
+pre_signed:
+	to_uint str
+	jc to_int_error
+	
+	get_char_by_index str, 0
+	cmp dl, '-'
+	jne positive 
+	cmp ax,32768
+	ja to_int_error
+	neg ax
+	jmp to_int_succes
+
+positive:
+	cmp ax,32767
+	ja to_int_error
+
+to_int_succes:
+	clc
+	jmp to_int_exit
+
+to_int_error:
+	mov ax, -1
+	stc
+
+to_int_exit:
+	lite_pop
+
+endm
+
+;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
