@@ -125,6 +125,33 @@ remove macro str1, str2
 	    find_substr str1, str2
 	    cmp al, 0ffh   
 	    je gerauahier
+	    jmp word_check
+
+word_check:
+
+	push_registers
+	cmp al, 0ffh
+	je start_index
+
+after_space:
+	get_char_by_inedx str1, 
+	mov bx, offset str1
+	xor dx, dx
+	xor ah, ah
+	get_size str2
+	add bx, dx
+	add bx, ax
+	add bx, 3
+	
+	mov dh, [bx]
+	cmp bx, 32
+	je continue_removing
+	jmp gerauahier:
+	
+	
+
+continue_removing:
+	    pop_registers 
 	    get_size str1
 	    mov cl, dl
 	    sub cl, bl
@@ -177,3 +204,31 @@ gerauahier:
 
 endm 
 	
+
+push_registers macro	;exept "ip" and "cs"
+	push ax
+	push bx
+	push cx
+	push dx
+	push ss
+	push sp
+	push bp
+	push si
+	push di
+	push ds
+	push es
+endm
+
+pop_registers macro	;exept "ip" and "cs"
+	pop ax
+	pop bx
+	pop cx
+	pop dx
+	pop ss
+	pop sp
+	pop bp
+	pop si
+	pop di
+	pop ds
+	pop es
+endm
