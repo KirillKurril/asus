@@ -614,11 +614,13 @@ endm
 
 copy_cmd macro str
 
-local copy_loop
+local copy_loop, bad_end, exit
 lite_push  
   
     xor bx, bx
     mov bl, es:[80h]
+    test bl, bl
+    jz bad_end
     dec bl
     set_size substr, bl
     
@@ -632,6 +634,12 @@ copy_loop:
     inc di
     inc si
     loop copy_loop
+    jmp exit
 
-lite_pop  
+bad_end:
+    stc
+
+exit:
+lite_pop 
+
 endm

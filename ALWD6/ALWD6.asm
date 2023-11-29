@@ -18,7 +18,8 @@ include dfiles_1.0.inc
 .code 
     start:       
     data_init                           
-    copy_cmd substr 
+    copy_cmd substr
+    jc error 
     space_check substr
     jc error
     
