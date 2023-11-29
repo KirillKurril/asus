@@ -27,7 +27,9 @@ include dmitruk_1.2.6.inc
 
 ; set_buffer_position (file_handler, position_buffer)   file_handler must be dw, file_handler must be dw array for 2 items
 
-; word_check_f (str_size, counter, file_handler, position_buffer, char_buffer)   
+; move_position macro (new_pos_offset, file_handler)	new_pos_offset musn't be ax, bx, dx or cx   
+
+; word_check_f (str_size, file_handler, position_buffer, char_buffer)   
 
 ; skip_string (file_handler, char_buffer)   returns 0FFh in AX if the last string in file 
 
@@ -51,7 +53,7 @@ endm
 
 ;--------------------------------------------------------------------------------------------------------
 
-set_buffer_position macro file_handler, position_buffer
+set_pos_from_buff macro file_handler, position_buffer
 lite_push
     mov ax, 0
     mov bx, file_handler
@@ -117,7 +119,7 @@ endm
 
 ;--------------------------------------------------------------------------------------------------------
 
-find_substr_in_f_str macro file_name, substr, file_handler, counter, char_buffer, position_buffer 
+fstr_contains macro file_name, substr, file_handler, counter, char_buffer, position_buffer 
     
 local exit, read_loop, end_of_file, start_over, word_check
 lite_push  
@@ -126,7 +128,7 @@ xor cx, cx
 read_loop:
     read_byte file_handler, char_buffer
     jc exit
-    cmp char_buffer, 0h
+    cmp ax, 0h
     je end_of_file
     cmp char_buffer, 0Ah
     je exit
@@ -144,7 +146,7 @@ read_loop:
     
     
 word_check:
-    word_check_f substr, file_handler, position_buffer  
+    word_check_f substr, file_handler, position_buffer, char_buffer   
     jc start_over
     inc counter
     skip_string file_handler, char_buffer
@@ -157,6 +159,7 @@ start_over:
           
     
 end_of_file:
+    clc
     mov ah, 0FFh
     
 exit:
@@ -172,7 +175,7 @@ local read_loop, end_of_file, exit
 
 read_loop:
     read_byte file_handler, char_buffer
-    cmp char_buffer, 0h
+    cmp ax, 0h
     je end_of_file
     cmp char_buffer, 0Ah
     je exit
@@ -186,21 +189,29 @@ endm
 
 ;-------------------------------------------------------------------------------------------------------- 
                                                                                                          
-move_position macro cur_offset, file_handler, position_buffer               
+move_position macro new_pos_offset, file_handler               
 lite_push
-    mov al, 0
+
+    mov ax, 1
+    mov bx, file_handler
+    mov cx, 0
+    mov dx, 0
     mov ah, 42h
-    mov bx, file_handler 
-    mov cx, word ptr [position_buffer]
-    mov dx, word ptr [position_buffer + 2]
-    add dx, cur_offset
+    int 21h
+
+    mov cx, dx
+    mov dx, ax 	
+
+    mov al, 0
+    mov ah, 42h 
+    add dx, new_pos_offset
     int 21h
 lite_pop    
 endm                                                                                                         
                                                                                                          
 ;--------------------------------------------------------------------------------------------------------
 
-word_check_f macro substr, counter, file_handler, position_buffer, char_buffer  
+word_check_f macro substr, file_handler, position_buffer, char_buffer  
 
 local end_check, bad_end, exit
 lite_push
@@ -209,19 +220,20 @@ save_position file_handler, position_buffer
     get_size substr    
     inc dx
     neg dx
-    move_position dx, file_handler, position_buffer
+    mov di, dx
+    move_position di, file_handler
     jc end_check
     read_byte file_handler, char_buffer
     cmp char_buffer, 20h
     je end_check
     cmp char_buffer, 0Ah
     je end_check
-    set_buffer_position file_handler, position_buffer
+    set_pos_from_buff file_handler, position_buffer
     jmp bad_end 
     
 end_check:
     clc
-    set_buffer_position file_handler, position_buffer
+    set_pos_from_buff file_handler, position_buffer
     read_byte file_handler, char_buffer
     cmp ax, 0h
     je exit

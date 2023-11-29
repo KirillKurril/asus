@@ -14,7 +14,7 @@
 ; push_registers () don't push "ip" and "cs"
 ; pop_registers () don't pop "ip" and "cs"
 ; space_check () returns -1 in al if string contains spaces
-; set_size (str_name) set string size from dl value
+; set_size (str_name, new_size) set string size from dl value
 ; is_empty (str_name) set ZF if string is empty
 ; to_uint (str_name) if error, returns ffff in ax and cf = 1, si must be 0h or if is called from to_int 0h or 01h
 ; to_int (str_name) if error, returns ffff in ax and cf = 1
@@ -449,11 +449,12 @@ space_check macro str
 	get_size str
 	xor cx, cx
 	mov cl, dl
-	mov bx, 0h
+	xor si, 0h
 	mov al, 0h
 
 check_loop:
-	get_char_by_index str, bx
+	get_char_by_index str, si
+        inc si
 	cmp dl, 20h
 	je space_imposter_detected
 	loop check_loop
@@ -469,11 +470,11 @@ endm
 
 ;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-set_size macro str
+set_size macro str, new_size
 	push si
 	mov si, offset str
         add si, 1
-       	mov [si], dl
+       	mov [si], new_size
 	pop si
 
 endm
@@ -611,4 +612,26 @@ endm
 
 ;------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+copy_cmd macro str
 
+local copy_loop
+lite_push  
+  
+    xor bx, bx
+    mov bl, es:[80h]
+    dec bl
+    set_size substr, bl
+    
+    mov cx, bx
+    mov si, 82h
+    mov di, 2 
+        
+copy_loop:
+    mov dl,es:[si]
+    mov substr[di],dl
+    inc di
+    inc si
+    loop copy_loop
+
+lite_pop  
+endm

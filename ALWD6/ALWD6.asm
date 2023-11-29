@@ -7,9 +7,10 @@ include dfiles_1.0.inc
  file_handler dw ?
  position_buffer dd 0h
  counter dw 0h 
- say_hello db "Enter the string to find$"
  errstr db "ERROR!$" 
- fname db "C:\file.txt", 0h   
+ fname db "C:\file1.txt", 0h 
+ answer db "The number of matching rows is:$"
+ cur_offset dw 0h  
     
 .stack
     dw 128 dup(0)
@@ -17,17 +18,16 @@ include dfiles_1.0.inc
 .code 
     start:       
     data_init                           
-    print_string say_hello
-    print_new_line
-    get_string substr
+    copy_cmd substr 
     space_check substr
     jc error
-    print_new_line
     
     open_read fname, file_handler
+    jc error
     
 count_loop:
-    find_substr_in_f_str fname, substr, file_handler, counter, char_buffer, position_buffer
+    clc 
+    fstr_contains fname, substr, file_handler, counter, char_buffer, position_buffer    
     jc error 
     cmp ah, 0FFh
     jne count_loop
@@ -35,13 +35,14 @@ count_loop:
     close file_handler 
     
     mov ax, counter
+    print_string answer
+    print_new_line 
     decimalize_print
     jmp exit
     
 error:
     print_string errstr
-    jmp start
-        
+ 
 exit:  
                        
 end start
