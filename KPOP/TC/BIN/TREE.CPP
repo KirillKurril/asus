@@ -1,0 +1,1190 @@
+#include <stdio.h>
+#include <conio.h>
+
+int main() {
+    short tree[800];
+    short root = -1;
+    short temp;
+    short freeAdress = 0;
+    short amount = 0;
+    short passValue = 0;
+    short leftheight = 0;
+    short rightheight = 0;
+    short balance = 0;
+    short leftR = -1;
+    short leftRightR = -1;
+    short rightL = -1;
+    short rightLeftL = -1;
+    short rotationTemp = -1;
+    short tempValue = -1;
+    char buffer[5] = { (char)3, '$', '$' , '$' , '$' };
+    //buffer db 3h, 4 dup('$')
+    short number = 10;
+    char newl[3] = { (char)10, (char)13, '$' };
+    //filename db "file.txt", 0
+    char filename[] = { 'f','i','l','e','.','t','x','t',(char)0 };
+    short handle;
+    char charbuffer;
+    char space = ' ';
+
+
+    int choice;
+    for (short i = 0; i < 200; i += 4)
+    {
+        tree[i] = 0;
+        tree[i + 1] = 1;
+        tree[i + 2] = 0;
+        tree[i + 3] = 0;
+    }
+
+    clrscr();
+    asm{
+        call findfree
+        mov ax, freeAdress
+        mov root, ax
+    }
+        while (1) {
+            clrscr();
+            printf("Menu:\n");
+            printf("1. Insert into tree\n");
+            printf("2. Erase from tree\n");
+            printf("3. Show tree\n");
+            printf("4. Input tree from file\n");
+            printf("5. Output tree to file\n");
+            printf("6. Clear tree\n");
+            printf("0. Exit\n");
+            printf("Choose action: ");
+            scanf("%d", &choice);
+
+            switch (choice) {
+            case 1:
+                clrscr();
+                while (1) {
+                    printf("Enter value(1..100):\n");
+                    scanf("%d", &passValue);
+                    if (passValue > 0 && passValue < 101) break;
+                    clrscr();
+                    printf("Incorrectt inpu1! Try again:\n");
+                }
+                asm{
+                    call tree_insert
+                }
+                break;
+            case 2:
+                clrscr();
+                while (1) {
+                    printf("Enter value(1..100):\n");
+                    scanf("%d", &passValue);
+                    if (passValue > 0 && passValue < 101) break;
+                    clrscr();
+                    printf("Incorrectt inpu1! Try again:\n");
+                }
+                asm{
+                    push passValue
+                    push root
+                    call erase
+                }
+                printf("\nPress any key to return.\n");
+                getch();
+                break;
+            case 3:
+                clrscr();
+                asm{
+                    push 0
+                    push root
+                    call printTree
+                }
+                printf("\nPress any key to return.\n");
+                getch();
+                break;
+            case 4:
+                clrscr();
+                for (short j = 0; j < 200; j += 4)
+                {
+                    tree[j] = 0;
+                    tree[j + 1] = 1;
+                    tree[j + 2] = 0;
+                    tree[j + 3] = 0;
+                }
+                asm{
+                    call findfree
+                    mov ax, freeAdress
+                    mov root, ax
+                    call input_file
+                }
+                printf("Input successful. Press any key to return.\n");
+                getch();
+                break;
+            case 5:
+                clrscr();
+                asm{
+                    call output_file
+                }
+                printf("Output successful. Press any key to return.\n");
+                getch();
+                break;
+            case 6:
+                clrscr();
+                for (short i = 0; i < 200; i += 4)
+                {
+                    tree[i] = 0;
+                    tree[i + 1] = 1;
+                    tree[i + 2] = 0;
+                    tree[i + 3] = 0;
+                }
+                asm{
+                    call findfree
+                    mov ax, freeAdress
+                    mov root, ax
+                }
+                printf("Tree has been cleared. Press any key to return.\n");
+                getch();
+                break;
+            case 0:
+                return 0;
+            default:
+                break;
+            }
+        }
+
+    return 0;
+    //findfree proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    asm{
+    findfree proc
+        lea bx, tree
+    }
+    freeloop:
+    asm{
+        cmp[bx], 0
+        je endfree
+        add bx, 8
+        jmp freeloop
+    }
+    endfree:
+    asm{
+        mov freeAdress, bx
+        ret
+    findfree endp
+    }
+        //getheight proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        getheight proc
+            mov ax, 0
+            cmp bx, 0
+            je skip
+            mov ax,[bx + 2]
+    }
+    skip:
+    asm{
+        ret
+    getheight endp
+    }
+        //minvalnode proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        minvalnode proc
+            pop cx
+            pop bx
+            push cx
+    }
+    notfound:
+    asm{
+        cmp[bx + 4], 0
+        je found
+        mov bx,[bx + 4]
+        jmp notfound
+    }
+    found:
+    asm{
+        ret
+    minvalnode endp
+    }
+        //getbalance proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        getbalance proc
+            mov balance, 0
+            cmp[bx], 0
+            je skipbal
+            push bx
+            mov bx,[bx + 4]
+            call getheight
+            mov leftheight, ax
+            pop bx
+            push bx
+            mov bx,[bx + 6]
+            call getheight
+            mov rightheight, ax
+            pop bx
+            mov ax, leftheight
+            sub ax, rightheight
+            mov balance, ax
+    }
+    skipbal:
+    asm{
+        ret
+    getbalance endp
+    }
+        //rightrotate proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        rightrotate proc
+            push bx
+            mov temp, bx
+
+            mov ax,[bx + 4]
+            mov leftR, ax
+
+            mov bx, leftR
+            mov ax,[bx + 6]
+            mov leftRightR, ax
+
+            mov bx, leftR
+            mov ax, temp
+            mov[bx + 6], ax
+
+            mov bx, leftRightR
+
+            mov bx, temp
+            mov ax, leftRightR
+            mov[bx + 4], ax
+
+            mov bx, temp
+            mov bx,[bx + 4]
+            call getheight
+            mov leftheight, ax
+            mov bx, temp
+            mov bx,[bx + 6]
+            call getheight
+            mov rightheight, ax
+            mov bx, temp
+            mov[bx + 2], 1
+            cmp ax, leftheight
+
+            jg RRg
+            mov cx, leftheight
+            mov bx, temp
+            add[bx + 2], cx
+            jmp RLg
+    }
+    RRg:
+    asm{
+        mov cx, rightheight
+        mov bx, temp
+        add[bx + 2], cx
+    }
+    RLg:
+    asm{
+        mov bx, leftR
+        mov bx,[bx + 4]
+        call getheight
+        mov leftheight, ax
+        mov bx, leftR
+        mov bx,[bx + 6]
+        call getheight
+        mov rightheight, ax
+        cmp ax, leftheight
+
+        jg RRg2
+        mov cx, leftheight
+        mov bx, leftR
+        mov[bx + 2], 1
+        add[bx + 2], cx
+        jmp RLg2
+    }
+    RRg2:
+    asm{
+        mov cx, rightheight
+        mov bx, leftR
+        mov[bx + 2], 1
+        add[bx + 2], cx
+    }
+    RLg2:
+    asm{
+        pop bx
+        mov ax, leftR
+        ret
+    rightrotate endp
+    }
+        //leftrotate proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+            leftrotate proc
+            push bx
+            mov temp, bx
+
+            mov ax,[bx + 6]
+            mov rightL, ax
+
+            mov bx, rightL
+            mov ax,[bx + 4]
+            mov rightLeftL, ax
+
+            mov bx, rightL
+            mov ax, temp
+            mov[bx + 4], ax
+
+            mov bx, rightLeftL
+
+            mov bx, temp
+            mov ax, rightLeftL
+            mov[bx + 6], ax
+
+            mov bx, temp
+            mov bx,[bx + 4]
+            call getheight
+            mov leftheight, ax
+            mov bx, temp
+            mov bx,[bx + 6]
+            call getheight
+            mov rightheight, ax
+            mov bx, temp
+            mov[bx + 2], 1
+            cmp ax, leftheight
+
+            jg LRg
+            mov cx, leftheight
+            mov bx, temp
+            add[bx + 2], cx
+            jmp LLg
+    }
+    LRg:
+    asm{
+        mov cx, rightheight
+        mov bx, temp
+        add[bx + 2], cx
+    }
+    LLg:
+    asm{
+        mov bx, rightL
+        mov bx,[bx + 4]
+        call getheight
+        mov leftheight, ax
+        mov bx, rightL
+        mov bx,[bx + 6]
+        call getheight
+        mov rightheight, ax
+        cmp ax, leftheight
+
+        jg LRg2
+        mov cx, leftheight
+        mov bx, rightL
+        mov[bx + 2], 1
+        add[bx + 2], cx
+        jmp LLg2
+    }
+    LRg2:
+    asm{
+        mov cx, rightheight
+        mov bx, rightL
+        mov[bx + 2], 1
+        add[bx + 2], cx
+    }
+    LLg2:
+    asm{
+
+        pop bx
+        mov ax, rightL
+        ret
+    leftrotate endp
+    }
+        //insert proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        insert proc
+            pop cx
+            pop temp
+            push cx
+
+            mov bx, temp
+            cmp[bx], 0
+            jne compare1
+            jmp compare2
+    }
+    compare1:
+    asm{
+        jmp compare
+    }
+    compare2:
+insertnode:
+    asm{
+        mov ax, passValue
+        mov[bx], ax
+        ret
+    }
+    greater:
+    asm{
+        mov ax,[bx + 6]
+        cmp ax, 0
+        jne recurg
+
+        push bx
+        call findfree
+        pop bx
+
+        mov ax, freeAdress
+        mov[bx + 6], ax
+
+    }
+    recurg:
+    asm{
+        push bx
+        push ax
+
+        call insert
+        mov ax, bx
+        pop bx
+        mov[bx + 6], ax
+
+
+        push bx
+        mov bx,[bx + 6]
+        call getheight
+        mov rightheight, ax
+
+        pop bx
+        push bx
+
+        mov bx,[bx + 4]
+        call getheight
+        mov leftheight, ax
+
+        pop bx
+        mov[bx + 2], 1
+
+
+        mov ax, leftheight
+        cmp rightheight, ax
+        jg incright
+        jmp incleft
+    }
+    incright:
+    asm{
+        mov ax, rightheight
+        add[bx + 2], ax
+        jmp rotation
+    }
+    incleft:
+    asm{
+        mov ax, leftheight
+        add[bx + 2], ax
+        jmp rotation
+    }
+    lower:
+    asm{
+        mov ax,[bx + 4]
+        cmp ax, 0
+        jne recurl
+
+
+        push bx
+        call findfree
+        pop bx
+
+        mov ax, freeAdress
+        mov[bx + 4], ax
+    }
+    recurl:
+    asm{
+        push bx
+        push ax
+
+        call insert
+        mov ax, bx
+        pop bx
+        mov[bx + 4], ax
+
+
+        push bx
+        mov bx,[bx + 6]
+        call getheight
+        mov rightheight, ax
+
+        pop bx
+        push bx
+
+        mov bx,[bx + 4]
+        call getheight
+        mov leftheight, ax
+
+        pop bx
+        mov[bx + 2], 1
+
+
+        mov ax, leftheight
+        cmp rightheight, ax
+        jg incright
+        jmp incleft
+    }
+    compare:
+    asm{
+        mov ax,[bx]
+        cmp passValue, ax
+        jg greater1
+        jl lower
+        ret
+    }
+    greater1:
+    asm{
+        jmp greater
+    }
+    rotation:
+    asm{
+        call getbalance
+
+        cmp balance, 1
+        jg case1
+        cmp balance, -1
+        jl case2
+        ret
+    }
+    case1:
+    asm{
+        push bx
+        mov bx,[bx + 4]
+        mov ax,[bx]
+        pop bx
+        cmp passValue, ax
+        jg case3
+
+        call rightrotate
+        mov bx, ax
+        ret
+    }
+    case2:
+    asm{
+        push bx
+        mov bx,[bx + 6]
+        mov ax,[bx]
+        cmp ax, passValue
+        pop bx
+        jg case4
+
+        call leftrotate
+        mov bx, ax
+        ret
+    }
+    case3:
+    asm{
+        push bx
+        mov bx,[bx + 4]
+        call leftrotate
+
+        pop cx
+        mov bx, ax
+        mov bx, cx
+        mov[bx + 4], ax
+
+        mov bx, cx
+        call rightrotate
+        mov bx, ax
+        ret
+    }
+    case4:
+    asm{
+        push bx
+        mov bx,[bx + 6]
+        call rightrotate
+
+        pop cx
+        mov bx, ax
+        mov bx, cx
+        mov[bx + 6], ax
+
+        mov bx, cx
+        call leftrotate
+        mov bx, ax
+        ret
+    insert endp
+    }
+        //erase proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        erase proc
+            pop cx
+            pop bx
+            pop tempValue
+            push cx
+
+            cmp bx, 0
+            jne ret1
+            ret
+    }
+    ret1:
+    asm{
+        mov ax,[bx]
+        cmp tempValue, ax
+        jl rec1
+        jg rec2
+        jmp rec3
+
+
+    }
+    rec1:
+    asm{
+        mov ax,[bx + 4]
+        push bx
+        push tempValue
+        push ax
+        call erase
+        mov ax, bx
+        pop bx
+        mov si,[bx + 4]
+        cmp[si], 0
+        je setnullleft
+        mov[bx + 4], ax
+        jmp afterrec
+    }
+    setnullleft:
+    asm{
+        mov[bx + 4], 0
+        jmp afterrec
+    }
+    rec2:
+    asm{
+        mov ax,[bx + 6]
+        push bx
+        push tempValue
+        push ax
+        call erase
+        mov ax, bx
+        pop bx
+        mov si,[bx + 6]
+        cmp[si], 0
+        je setnullright
+        mov[bx + 6], ax
+        jmp afterrec
+    }
+    setnullright:
+    asm{
+        mov[bx + 6], 0
+        jmp afterrec
+    }
+    rec3:
+    asm{
+        mov cx, 0
+        cmp[bx + 4], 0
+        jne inccx1
+        inc cx
+    }
+    inccx1:
+    asm{
+        cmp[bx + 6], 0
+        jne inccx2
+        inc cx
+    }
+    inccx2:
+    asm{
+        cmp cx, 1
+        jl rec33
+
+        cmp[bx + 4], 0
+        je label11
+        mov ax,[bx + 4]
+        mov temp, ax
+        jmp label22
+    }
+    label11:
+    asm{
+        mov ax,[bx + 6]
+        mov temp, ax
+    }
+    label22:
+    asm{
+        mov si, temp
+        cmp si, 0
+        jne label33
+        mov temp, bx
+
+        mov[bx], 0
+        mov[bx + 2], 1
+        mov[bx + 4], 0
+        mov[bx + 6], 0
+        jmp afterrec
+    }
+    label33:
+    asm{
+        mov si, temp
+        mov ax,[si]
+        mov[bx], ax
+        mov ax,[si + 2]
+        mov[bx + 2], ax
+        mov ax,[si + 4]
+        mov[bx + 4], ax
+        mov ax,[si + 6]
+        mov[bx + 6], ax
+        mov[si], 0
+        mov[si + 2], 1
+        mov[si + 4], 0
+        mov[si + 6], 0
+        jmp afterrec
+    }
+    rec33:
+    asm{
+        push bx
+        push[bx + 6]
+        call minvalnode
+        mov temp, bx
+        mov ax,[bx]
+        pop bx
+        mov[bx], ax
+
+
+        push bx
+        push ax
+        push[bx + 6]
+        call erase
+        mov ax, bx
+        pop bx
+        mov si,[bx + 6]
+        cmp[si], 0
+        je setnullright2
+        mov[bx + 6], ax
+        jmp afterrec
+    }
+    setnullright2:
+    asm{
+        mov[bx + 6], 0
+        jmp afterrec
+    }
+    afterrec:
+    asm{
+        cmp bx, 0
+        jne label44
+        jmp label55
+    }
+    label44:
+    asm{
+        ret
+    }
+    label55:
+    asm{
+        push bx
+        mov bx,[bx + 4]
+        call getheight
+        mov leftheight, ax
+        pop bx
+        push bx
+        mov bx,[bx + 6]
+        call getheight
+        mov rightheight, ax
+        pop bx
+        push bx
+        mov[bx + 2], 1
+        cmp ax, leftheight
+
+        jg DRg
+        mov cx, leftheight
+        pop bx
+        push bx
+        add[bx + 2], cx
+        jmp DLg
+    }
+    DRg:
+    asm{
+        mov cx, rightheight
+        pop bx
+        push bx
+        add[bx + 2], cx
+    }
+    DLg:
+    asm{
+        pop bx
+        call getbalance
+
+        cmp balance, 1
+        jg case11
+        cmp balance, -1
+        jl case33
+        ret
+    }
+    case11:
+    asm{
+        push bx
+        mov bx,[bx + 4]
+        call getbalance
+        pop bx
+        cmp balance, 0
+        jl case22
+
+        push bx
+        call rightrotate
+        pop bx
+        mov bx, ax
+
+        ret
+    }
+    case22:
+    asm{
+        push bx
+        mov bx,[bx + 4]
+        call leftrotate
+        mov bx, ax
+        pop bx
+        call rightrotate
+        mov bx, ax
+
+        ret
+    }
+    case33:
+    asm{
+        push bx
+        mov bx,[bx + 6]
+        call getbalance
+        pop bx
+        cmp balance, 0
+        jg case44
+
+        push bx
+        call leftrotate
+        pop bx
+        mov bx, ax
+        ret
+    }
+    case44:
+    asm{
+        push bx
+        mov bx,[bx + 6]
+        call rightrotate
+        mov bx, ax
+        pop bx
+        call leftrotate
+        mov bx, ax
+        ret
+    erase endp
+    }
+        //decimalize_print proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        decimalize_print proc
+            test ax, ax
+            jns oi1
+
+            mov cx, ax
+            mov ah, 02h
+            mov dl, '-'
+            int 21h
+            mov ax, cx
+            neg ax
+    }
+    oi1:
+    asm{
+        xor cx, cx
+        mov bx, 10
+    }
+    oi2:
+    asm{
+        xor dx,dx
+        div bx
+        push dx
+        inc cx
+        test ax, ax
+        jnz oi2
+
+        mov ah, 02h
+    }
+    oi3:
+    asm{
+        pop dx
+        add dl, '0'
+        int 21h
+        loop oi3
+
+        ret
+    decimalize_print endp
+    }
+        //file_decimalize_print proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        file_decimalize_print proc
+            test ax, ax
+            jns foi1
+
+            mov cx, ax
+            mov ah, 02h
+            mov dl, '-'
+            int 21h
+            mov ax, cx
+            neg ax
+    }
+    foi1:
+    asm{
+        xor cx, cx
+        mov bx, 10
+    }
+    foi2:
+    asm{
+        xor dx,dx
+        div bx
+        push dx
+        inc cx
+        test ax, ax
+        jnz foi2
+
+        mov ah, 02h
+    }
+    foi3:
+    asm{
+        pop dx
+        add dl, '0'
+        lea bx, charbuffer
+        mov[bx], dl
+
+        mov ah, 40h
+        mov bx, handle
+        push cx
+        mov cx, 1
+        lea dx, charbuffer
+        int 21h
+
+        pop cx
+        loop foi3
+
+        ret
+    file_decimalize_print endp
+    }
+        //string_to_positive proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        string_to_positive proc
+    }
+    to_positive_start:
+    asm{
+        push dx
+        xor ax, ax
+        lea bx, buffer
+        inc bx
+        mov cx,[bx]
+        mov ch, 0
+    }
+    cycle:
+    asm{
+        mul number
+        inc bx
+        mov dx,[bx]
+        mov dh, 0
+        sub dl, '0'
+        add ax, dx
+        loop cycle
+    }
+    to_possitive_end:
+    asm{
+        pop dx
+        ret
+    string_to_positive endp
+    }
+        //tree_insert proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        /*
+            mov dx,offset buffer
+            mov ah,0Ah
+            int 21h
+            mov di,offset buffer
+
+            call string_to_positive
+            mov passValue, ax
+        */
+        asm{
+        tree_insert proc
+
+            push root
+            call insert
+            mov root, bx
+
+            lea dx, newl
+            mov ah,09h
+            int 21h
+            ret
+        tree_insert endp
+    }
+        //direct_bypass proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        direct_bypass proc
+            pop cx
+            pop bx
+            push cx
+            cmp bx, 0
+            je bypass_end
+
+            mov ax,[bx]
+            push bx
+            call decimalize_print
+            pop bx
+            mov dl, ' '
+            mov ah, 02h
+            int 21h
+
+            push bx
+            push[bx + 4]
+            call direct_bypass
+            pop bx
+            push bx
+            push[bx + 6]
+            call direct_bypass
+            pop bx
+    }
+    bypass_end:
+    asm{
+        ret
+    direct_bypass endp
+    }
+        //file_direct_bypass proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        file_direct_bypass proc
+            pop cx
+            pop bx
+            push cx
+            cmp bx, 0
+            je file_bypass_end
+
+            mov ax,[bx]
+            push bx
+            call file_decimalize_print
+            pop bx
+
+            push bx
+            mov bx, handle
+            mov cx, 1
+            lea dx, space
+            mov ah, 40h
+            int 21h
+            pop bx
+
+
+            push bx
+            push[bx + 4]
+            call file_direct_bypass
+            pop bx
+            push bx
+            push[bx + 6]
+            call file_direct_bypass
+            pop bx
+    }
+    file_bypass_end:
+    asm{
+        ret
+    file_direct_bypass endp
+    }
+        //output_file proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        output_file proc
+            mov ax, 3D01h
+            lea dx, filename
+            int 21h
+            mov handle, ax
+
+            push root
+            call file_direct_bypass
+
+            mov ah, 3Eh
+            lea bx, handle
+            int 21h
+            ret
+        output_file endp
+    }
+        //input_file proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        input_file proc
+            mov di, 0
+            mov ax, 3D00h
+            lea dx, filename
+            int 21h
+            mov handle, ax
+            jmp inloop
+    }
+    exloop:
+    asm{
+        lea bx, buffer
+        mov ax, di
+        mov[bx + 1], al
+        call string_to_positive
+
+        mov di, 0
+        mov passValue, ax
+        push root
+        call insert
+        mov root, bx
+    }
+    inloop:
+    asm{
+        mov bx, handle
+        mov cx, 1
+        lea dx, charbuffer
+        mov ah, 3Fh
+        int 21h
+
+        cmp ax, 0
+        je final1
+
+        mov si, dx
+        cmp byte ptr[si], ' '
+        je exloop
+
+        lea bx, buffer
+        inc bx
+        inc bx
+        mov al, byte ptr[si]
+        mov byte ptr[bx + di], al
+        inc di
+        jmp inloop
+    }
+    final1:
+    asm{
+        cmp di, 0
+        je finalfinal
+        call tree_insert
+    }
+    finalfinal:
+    asm{
+        mov ah, 3Eh
+        lea bx, handle
+        int 21h
+        ret
+    input_file endp
+    }
+        //printTree proc --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        asm{
+        printTree proc
+            pop cx
+            pop bx
+            pop ax
+            push cx
+
+            cmp bx, 0
+            jne print1
+            ret
+    }
+    print1:
+    asm{
+        add ax, 10
+
+        push ax
+        push bx
+
+        push ax
+        push[bx + 6]
+        call printTree
+
+        pop bx
+        pop ax
+        push ax
+        push bx
+
+        mov cx, ax
+        sub cx, 10
+        inc cx
+    }
+    printloop:
+    asm{
+        mov ah, 2
+        mov dl, " "
+        int 21h
+        loop printloop
+
+        mov ax,[bx]
+        call decimalize_print
+
+        lea dx, newl
+        mov ah, 9
+        int 21h
+
+        pop bx
+        pop ax
+        push ax
+        push[bx + 4]
+        call printTree
+
+        ret
+    printTree endp
+    }
+}

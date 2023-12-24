@@ -1,0 +1,4 @@
+﻿  Assembling absolution.asm...
+  Tree.cpp
+Tree.obj : error LNK2019: ссылка на неразрешенный внешний символ "private: void __thiscall Tree::insert_rec(int,int,int *,int *,int *,int *,int,int)" (?insert_rec@Tree@@AAEXHHPAH000HH@Z) в функции "public: void __thiscall Tree::insert(int,int)" (?insert@Tree@@QAEXHH@Z).
+C:\Uni\asus\ALWD8\casket\Debug\casket.exe : fatal error LNK1120: неразрешенных внешних элементов: 1

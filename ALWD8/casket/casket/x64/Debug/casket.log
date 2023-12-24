@@ -1,0 +1,7 @@
+﻿  Tree.cpp
+C:\Uni\asus\ALWD8\casket\casket\Tree.cpp(8,3): error C4235: использовано нестандартное расширение: ключевое слово "__asm" данной архитектурой не поддерживается
+C:\Uni\asus\ALWD8\casket\casket\Tree.cpp(9,4): error C2065: mov: необъявленный идентификатор
+C:\Uni\asus\ALWD8\casket\casket\Tree.cpp(9,8): error C2146: синтаксическая ошибка: отсутствие ";" перед идентификатором "eax"
+C:\Uni\asus\ALWD8\casket\casket\Tree.cpp(9,8): error C2065: eax: необъявленный идентификатор
+C:\Uni\asus\ALWD8\casket\casket\Tree.cpp(9,12): error C2146: синтаксическая ошибка: отсутствие ";" перед идентификатором "head"
+C:\Uni\asus\ALWD8\casket\casket\Tree.cpp(10,3): error C2143: синтаксическая ошибка: отсутствие ";" перед "}"
